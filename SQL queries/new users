@@ -1,0 +1,10 @@
+SELECT toStartOfDay(toDateTime(first_occurence)) AS __timestamp,
+       count(DISTINCT user_id) AS "Новые пользователи (первые сообщения)"
+FROM
+  (SELECT user_id,
+          min(time) as first_occurence
+   FROM simulator_20220520.message_actions
+   GROUP BY user_id) AS virtual_table
+GROUP BY toStartOfDay(toDateTime(first_occurence))
+ORDER BY "Новые пользователи (первые сообщения)" DESC
+LIMIT 1000;

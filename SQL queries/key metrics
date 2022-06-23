@@ -1,0 +1,77 @@
+SELECT t1.Days, t1.Users_feed, t2.Users_mess, t3.Users_feed_with_mess, t4.Users_feed_without_mess, 
+    t5.Views, t6.Likes, t7.Messages, t8.New_users_feed, t9.New_users_mess FROM
+
+    (SELECT toDate(time) AS Days, COUNT(DISTINCT user_id) AS Users_feed
+    FROM simulator_20220520.feed_actions
+    WHERE toDate(time) BETWEEN today()-7 and today()-1
+    GROUP BY toDate(time)) AS t1
+
+    JOIN
+    (SELECT toDate(time) AS Days, COUNT(DISTINCT user_id) AS Users_mess
+    FROM simulator_20220520.message_actions
+    WHERE toDate(time) BETWEEN today()-7 and today()-1
+    GROUP BY toDate(time)) AS t2
+    ON t1.Days=t2.Days
+
+    JOIN 
+    (SELECT toDate(time) AS Days, count(DISTINCT user_id) AS Users_feed_with_mess FROM
+         (SELECT *
+          FROM simulator_20220520.feed_actions) AS tt1
+       JOIN
+         (SELECT user_id
+          FROM simulator_20220520.message_actions) AS tt1 USING user_id
+    GROUP BY toDate(time)) AS t3
+    ON t1.Days = t3.Days
+
+    JOIN
+    (SELECT toDate(time) AS Days, count(DISTINCT user_id) AS Users_feed_without_mess FROM
+         (SELECT *
+          FROM simulator_20220520.feed_actions) AS tt3
+       ANTI JOIN
+         (SELECT user_id
+          FROM simulator_20220520.message_actions) AS tt4 USING user_id
+    GROUP BY toDate(time)) AS t4
+    ON t1.Days = t4.Days
+
+    JOIN
+    (SELECT toDate(time) AS Days, countIf(user_id, action='view') AS Views
+    FROM simulator_20220520.feed_actions
+    WHERE toDate(time) BETWEEN today()-7 and today()-1
+    GROUP BY toDate(time)) AS t5
+    ON t1.Days=t5.Days
+
+    JOIN
+    (SELECT toDate(time) AS Days, countIf(user_id, action='like') AS Likes
+    FROM simulator_20220520.feed_actions
+    WHERE toDate(time) BETWEEN today()-7 and today()-1
+    GROUP BY toDate(time)) AS t6
+    ON t1.Days=t6.Days
+
+    JOIN
+    (SELECT toDate(time) AS Days, COUNT(user_id) AS Messages
+    FROM simulator_20220520.message_actions
+    WHERE toDate(time) BETWEEN today()-7 and today()-1
+    GROUP BY toDate(time)) AS t7
+    ON t1.Days=t7.Days
+
+    JOIN
+    (SELECT toDate(first_occurence) AS Days,
+           count(user_id) AS New_users_feed
+    FROM
+      (SELECT user_id,
+              min(time) as first_occurence
+       FROM simulator_20220520.feed_actions
+       GROUP BY user_id) AS tt4
+    GROUP BY toDate(first_occurence)) AS t8
+    ON t1.Days=t8.Days
+
+    JOIN
+    (SELECT toDate(first_occurence) AS Days,
+           count(user_id) AS New_users_mess
+    FROM
+      (SELECT user_id,
+              min(time) as first_occurence
+       FROM simulator_20220520.message_actions
+       GROUP BY user_id) AS tt5
+    GROUP BY toDate(first_occurence)) AS t9
+    ON t1.Days=t9.Days 

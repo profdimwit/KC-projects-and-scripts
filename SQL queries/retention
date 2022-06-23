@@ -1,0 +1,27 @@
+SELECT day AS day,
+              start_day AS start_day,
+              max(organic_users) AS "MAX(organic_users)"
+FROM
+  (SELECT toString(start_day) AS start_day,
+          toString(day) AS day,
+          count(user_id) AS users,
+          countIf(user_id, source='organic') AS organic_users,
+          countIf(user_id, source='ads') AS ads_users
+   FROM
+     (SELECT *
+      FROM
+        (SELECT user_id,
+                min(toDate(time)) AS start_day
+         FROM simulator_20220520.feed_actions
+         GROUP BY user_id) t1
+      JOIN
+        (SELECT DISTINCT user_id,
+                         toDate(time) AS day,
+                         source
+         FROM simulator_20220520.feed_actions) t2 USING user_id
+      WHERE start_day >= today() - 20 )
+   GROUP BY start_day,
+            day) AS virtual_table
+GROUP BY day,
+         start_day
+LIMIT 1000;
